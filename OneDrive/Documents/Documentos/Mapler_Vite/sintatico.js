@@ -9,19 +9,36 @@ export class AnalisadorSintatico {
     this.index = 0;
   }
   // O Parse que vai gerar a AST arvore completa -- incluir variaveis, corpo e fim
- parse(tokens) {
+ 
+  parse(tokens) {
     this.tokens = tokens;
     this.index = 0;
-    
+    const declaracoes = [];
     try {
-      // Esta é a nova abordagem, mais estruturada
-      const declaracoes = this.programa();
-      // Retorna o programa principal encapsulado em um Módulo implícito
+      while (!this.isFim()) {
+        declaracoes.push(this.declaracaoDeNivelSuperior());
+      }
       return new Decl.Modulo(1, { lexema: 'principal', linha: 1 }, new Decl.Bloco(1, declaracoes));
     } catch (erro) {
       this.eventosService.notificar('ERRO', erro);
       return null;
     }
+  }
+
+  declaracaoDeNivelSuperior() {
+    if (this.checar(TiposToken.VARIAVEIS)) {
+      this.avancar();
+      return this.declaracaoVariaveis();
+    }
+    if (this.checar(TiposToken.TIPO_MODULO)) {
+      return this.declaracao();
+    }
+    if (this.checar(TiposToken.INICIO)) {
+      return this.declaracao();
+    }
+    // Se chegou aqui, algo está fora de ordem.
+    this.avancar(); // Evita loop infinito
+    return null;
   }
 //23/06
 parseModulo() {
@@ -227,7 +244,16 @@ declaracaoVariaveis() {
     throw this.erro(this.espiar(), 'Tipo inválido.');
   }
 
-
+ blocoPrincipal() {
+      this.consumirToken(TiposToken.INICIO, "Esperado 'inicio' para o bloco principal.");
+      const declaracoes = [];
+      while(!this.isFim() && !this.checar(TiposToken.FIM)) {
+          declaracoes.push(this.declaracao());
+      }
+      this.consumirToken(TiposToken.FIM, "Esperado 'fim' para encerrar o programa.");
+      this.consumirToken(TiposToken.PONTO, "Esperado '.' no final do programa.");
+      return declaracoes;
+  }
 // -------------------------------------
 // Declarações principais (corpo)
 // -------------------------------------
@@ -280,16 +306,8 @@ declaracao() {
   }
   
   
-   blocoPrincipal() {
-      this.consumirToken(TiposToken.INICIO, "Esperado 'inicio' para o bloco principal.");
-      const declaracoes = [];
-      while(!this.isFim() && !this.checar(TiposToken.FIM)) {
-          declaracoes.push(this.declaracao());
-      }
-      this.consumirToken(TiposToken.FIM, "Esperado 'fim' para encerrar o programa.");
-      this.consumirToken(TiposToken.PONTO, "Esperado '.' no final do programa.");
-      return declaracoes;
-  }
+  
+
   escreverDeclaracao() {
     const expressoes = [];
     do {
