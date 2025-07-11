@@ -47,5 +47,35 @@ describe('AnalisadorSintatico', () => {
   });
 
   // Adicione mais testes aqui...
+   it('deve parsear uma declaracao de matriz corretamente', () => {
+    // Arrange
+    const codigo = `
+        variaveis
+            grade: vetor[3, 2] de inteiro;
+        inicio
+        fim.
+    `;
+    
+    // Act
+    const tokens = lexico.scanTokens(codigo);
+    const ast = sintatico.parse(tokens);
+
+    // Assert
+    expect(ast).toBeDefined();
+    
+    // Navega na árvore para encontrar a declaração
+    const declaracaoDeVariaveis = ast.corpo.declaracoes[0];
+    const variavelNode = declaracaoDeVariaveis.variaveis[0];
+
+    // Verifica os detalhes do nó
+    expect(variavelNode).toBeInstanceOf(Decl.Var);
+    expect(variavelNode.nome.lexema).toBe('grade');
+    expect(variavelNode.tipoDado.tipo).toBe(TiposToken.TIPO_INTEIRO);
+
+    // Este é o teste CRUCIAL para matrizes.
+    // 'toEqual' é usado para comparar o conteúdo de arrays ou objetos.
+    expect(variavelNode.dimensoes).toEqual([3, 2]);
+  });
+
 
 });

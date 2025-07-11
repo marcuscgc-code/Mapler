@@ -9,24 +9,20 @@ export class AnalisadorSintatico {
     this.index = 0;
   }
   // O Parse que vai gerar a AST arvore completa -- incluir variaveis, corpo e fim
-  parse(tokens) {
-  this.tokens = tokens;
-  this.index = 0;
-
-  try {
-    // Caso comece com 'modulo' - estrutura completa
-    if (this.isTokenTypeIgualA(TiposToken.TIPO_MODULO)) {
-      return this.parseModulo();
+ parse(tokens) {
+    this.tokens = tokens;
+    this.index = 0;
+    
+    try {
+      // Esta é a nova abordagem, mais estruturada
+      const declaracoes = this.programa();
+      // Retorna o programa principal encapsulado em um Módulo implícito
+      return new Decl.Modulo(1, { lexema: 'principal', linha: 1 }, new Decl.Bloco(1, declaracoes));
+    } catch (erro) {
+      this.eventosService.notificar('ERRO', erro);
+      return null;
     }
-    
-    // Caso seja um programa simples (sem módulo)
-    return this.parseProgramaSimples();
-    
-  } catch (erro) {
-    this.eventosService.notificar('ERRO', erro);
-    return null;
   }
-}
 //23/06
 parseModulo() {
   const nome = this.consumirToken(TiposToken.IDENTIFICADOR, 'Esperado nome do módulo');
