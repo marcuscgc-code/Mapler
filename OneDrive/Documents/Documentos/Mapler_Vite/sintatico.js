@@ -134,7 +134,27 @@ checar(tipo) {
     console.error(`[Linha ${token.linha}] Erro de sintaxe: ${mensagem}`);
     throw new Error(mensagem); // Força quebra da execução
   }
-  
+  //novo cerebro auxiliar
+  programa() {
+    const declaracoes = [];
+    // O loop continua até o fim do arquivo, procurando por declarações de alto nível.
+    while (!this.isFim()) {
+      if (this.checar(TiposToken.VARIAVEIS)) {
+        this.avancar();
+        declaracoes.push(this.declaracaoVariaveis());
+      } else if (this.checar(TiposToken.TIPO_MODULO)) {
+        declaracoes.push(this.declaracao());
+      } else if (this.checar(TiposToken.INICIO)) {
+        // Encontrou o bloco principal
+        declaracoes.push(this.declaracao());
+      } else {
+        // Se encontrar um token inesperado no nível mais alto, para.
+        // Isso evita loops infinitos.
+        break; 
+      }
+    }
+    return declaracoes;
+  }
 
   // ---------- Regras ----------
   //23/06
@@ -221,6 +241,7 @@ declaracao() {
       if (this.isTokenTypeIgualA(TiposToken.REPITA)) return this.repitaDeclaracao();
       if (this.isTokenTypeIgualA(TiposToken.ESCREVER)) return this.escreverDeclaracao();
       if (this.isTokenTypeIgualA(TiposToken.LER)) return this.lerDeclaracao();
+       if (this.isTokenTypeIgualA(TiposToken.TIPO_MODULO)) return this.declaracaoModulo();
   
       return this.expressaoDeclaracao();
     } catch (err) {
@@ -259,7 +280,16 @@ declaracao() {
   }
   
   
-  
+   blocoPrincipal() {
+      this.consumirToken(TiposToken.INICIO, "Esperado 'inicio' para o bloco principal.");
+      const declaracoes = [];
+      while(!this.isFim() && !this.checar(TiposToken.FIM)) {
+          declaracoes.push(this.declaracao());
+      }
+      this.consumirToken(TiposToken.FIM, "Esperado 'fim' para encerrar o programa.");
+      this.consumirToken(TiposToken.PONTO, "Esperado '.' no final do programa.");
+      return declaracoes;
+  }
   escreverDeclaracao() {
     const expressoes = [];
     do {
